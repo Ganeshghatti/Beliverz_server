@@ -16,7 +16,7 @@ const requireAuth = async (req, res, next) => {
 
     const decodedToken = jwt.verify(token, process.env.ADMINJWTSECRET);
     const adminId = decodedToken.userId;
-
+    console.log(adminId);
     const admin = await adminModel.findById(adminId);
 
     if (!admin) {
