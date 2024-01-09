@@ -3,7 +3,10 @@ const connectdatabase = require("../config/database");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const userroutes = require("./src/routes/User");
-require("dotenv").config();
+const dotenv = require('dotenv');
+const path = require('path');
+
+dotenv.config({ path: path.join(__dirname, 'api', '.env') });
 const app = express();
 
 app.use(express.json());
