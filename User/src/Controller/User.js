@@ -232,6 +232,7 @@ exports.login = async (req, res, next) => {
 
 exports.GetAllCategory = async (req, res, next) => {
   try {
+    console.log("object")
     const allCategory = await categoryModel.find();
     res.status(200).json({ category: allCategory });
   } catch (error) {
