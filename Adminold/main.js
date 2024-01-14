@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(cors());
 
-app.use(courseroutes)
+// app.use(courseroutes)
 app.use(instructorroutes);
 app.use(adminroutes);
 

@@ -17,7 +17,7 @@ const instructorrequireAuth = async (req, res, next) => {
     const decodedToken = jwt.verify(token, process.env.INSTRUCTORJWTSECRET);
     const instructorId = decodedToken.userId;
 
-    const instructor= await instructorModel.findById(instructorId);
+    const instructor = await instructorModel.findById(instructorId);
 
     if (!instructor) {
       return res.status(401).json({ error: "Request is not authorized" });

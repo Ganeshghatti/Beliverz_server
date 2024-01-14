@@ -6,21 +6,10 @@ const UserSchema = new mongoose.Schema({
     required: true,
   },
   password: String,
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  isAdmin: {
-    type: Boolean,
-    default: false,
-  },
   createdAt: {
     type: Date,
     immutable: true,
     default: () => Date.now(),
-  },
-  otp: {
-    type: Number,
   },
   username: String,
 });

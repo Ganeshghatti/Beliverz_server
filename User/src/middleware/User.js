@@ -3,7 +3,7 @@ const User = require("../Model/User");
 
 const requireAuth = async (req, res, next) => {
   const { authorization } = req.headers;
-  console.log(authorization);
+
   if (!authorization) {
     return res.status(401).json({ error: "Authorization token required" });
   }
@@ -12,7 +12,7 @@ const requireAuth = async (req, res, next) => {
   try {
     const userid = jwt.verify(token, process.env.JWTSECRET).userId;
     const user = await User.findOne({ _id: userid });
-    console.log(user);
+
     if (user) {
       req.user = user;
     } else {

@@ -2,7 +2,6 @@ const adminModel = require("../../../Model/Admin");
 const instructorModel = require("../../../Model/Instructor");
 const courseModel = require("../../../Model/Course");
 const categoryModel = require("../../../Model/Category");
-const formModel = require("../../../Model/Form")
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -83,17 +82,14 @@ exports.CreateCourse = async (req, res, next) => {
     instructors,
   } = req.body;
 
+  console.log(req.body);
   try {
     const prefix = "CORS";
     const uniquePart = uuid.v4().replace(/-/g, "").substr(0, 6);
     const courseID = `${prefix}${uniquePart}`;
 
-    const inputString = courseName;
-    const courseroute = inputString.replace(/[\s-]+/g, "-");
-
     const newCourse = new courseModel({
       courseName,
-      courseroute,
       courseId: courseID,
       payment,
       courseDescription,
@@ -339,9 +335,9 @@ exports.DeleteInstructor = async (req, res, next) => {
 exports.ChangePassword = async (req, res, next) => {
   console.log(req.body);
 
-  const { formData, email } = req.body;
+  const {formData,email } = req.body;
   try {
-    const admin = await adminModel.findOne({ email });
+    const admin = await adminModel.findOne({email});
 
     const match = await bcrypt.compare(formData.oldpassword, admin.password);
     if (!match) {
@@ -364,18 +360,6 @@ exports.ChangePassword = async (req, res, next) => {
   } catch (error) {
     sendErrorEmail(email, "Someone tried to Change Admin Password");
     res.status(500).json({ error: "Failed to change password" });
-  }
-};
-
-exports.GetFormData = async (req, res, next) => {
-  try {
-    const formData = await formModel.find();
-    res.status(200).json({ formData: formData });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
   }
 };
 

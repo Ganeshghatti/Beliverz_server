@@ -10,7 +10,6 @@ const {
   EditInstructor,
   DeleteInstructor,
   ChangePassword,
-  GetFormData,
 } = require("../Controller/Admin");
 const requireAuth = require("../middleware/Admin");
 const { CreateCourse, GetAllCourse } = require("../Controller/Admin");
@@ -29,6 +28,5 @@ router.route("/admin/edit-category").put(EditCategory);
 router.route("/admin/edit-instructor/:instructorId").patch(EditInstructor);
 router.route("/admin/delete-instructor/:instructorId").delete(DeleteInstructor);
 router.route("/admin/change-password").post(ChangePassword);
-router.route("/admin/get-formdata").get(GetFormData);
 
 module.exports = router;

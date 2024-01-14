@@ -18,10 +18,6 @@ const courseSchema = new mongoose.Schema({
     type: String,
   },
   courseInfo: {
-    reviews: {
-      type: Number,
-      default: 0,
-    },
     totalEnrollments: {
       type: Number,
       default: 0,
@@ -40,16 +36,16 @@ const courseSchema = new mongoose.Schema({
     },
     requirements: [String],
     totalHours: {
-      type: Number,
+      type: String,
       default: 0,
     },
-    chapters: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Chapter",
-      },
-    ],
   },
+  chapters: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Chapter",
+    },
+  ],
   courseCategory: [
     {
       categoryId: {
@@ -94,6 +90,10 @@ const courseSchema = new mongoose.Schema({
     decimal: true,
   },
   courseId: {
+    type: String,
+    unique: true,
+  },
+  courseroute: {
     type: String,
     unique: true,
   },

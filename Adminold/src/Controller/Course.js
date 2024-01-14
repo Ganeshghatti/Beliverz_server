@@ -20,15 +20,18 @@ app.use(cors());
 app.use(bodyParser.json());
 
 exports.GetCoursebyId = async (req, res, next) => {
-  const { courseId } = req.params;
+  console.log(req.params);
+  const { courseId } = req.params.id;
+  console.log(courseId);
   try {
-    const course = await courseModel.findOne({ courseId });
+    const course = await instructorModel.findOne({ courseId });
 
     if (!course) {
       return res
         .status(404)
         .json({ error: `Course with ID ${courseId} not found` });
     }
+
     res.status(200).json({ course: course });
   } catch (error) {
     console.error(error);
