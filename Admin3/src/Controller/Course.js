@@ -35,3 +35,35 @@ exports.GetCoursebyId = async (req, res, next) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.EditCourse = async (req, res, next) => {
+  const { courseId } = req.params;
+  const updatedCourseDetails = req.body;
+
+  try {
+    const course = await courseModel.findOne({ courseId });
+
+    if (!course) {
+      return res
+        .status(404)
+        .json({ error: `Course with ID ${courseId} not found` });
+    }
+    course.courseName = updatedCourseDetails.courseName;
+    course.courseDescription = updatedCourseDetails.courseDescription;
+    course.language = updatedCourseDetails.language;
+    course.courseDetail.tags = updatedCourseDetails.courseDetail.tags;
+    course.courseDetail.totalHours =
+      updatedCourseDetails.courseDetail.totalHours;
+    course.payment = updatedCourseDetails.payment;
+    course.amountInINR = updatedCourseDetails.amountInINR;
+    course.courseInfo.level = updatedCourseDetails.courseInfo.level;
+    course.introVideo = updatedCourseDetails.introVideo;
+    course.thumbnail = updatedCourseDetails.thumbnail;
+
+    await course.save()
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};

@@ -64,6 +64,7 @@ const courseSchema = new mongoose.Schema({
   ],
   introVideo: {
     type: String,
+    default:""
   },
   thumbnail: {
     type: String,
@@ -89,11 +90,11 @@ const courseSchema = new mongoose.Schema({
     max: 5,
     decimal: true,
   },
-  courseId: {
-    type: String,
-    unique: true,
+  NumberOfRatings:{
+    type: Number,
+    default: 0,
   },
-  courseroute: {
+  courseId: {
     type: String,
     unique: true,
   },
