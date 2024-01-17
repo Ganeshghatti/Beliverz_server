@@ -90,7 +90,6 @@ exports.CreateCourse = async (req, res, next) => {
 
     const newCourse = new courseModel({
       courseName,
-      courseroute,
       courseId: courseID,
       payment,
       courseDescription,
