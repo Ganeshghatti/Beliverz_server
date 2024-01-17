@@ -8,7 +8,7 @@ const courserequireAuth = async (req, res, next) => {
     if (!authorization) {
       return res.status(401).json({ error: "Authorization token required" });
     }
-    console.log(authorization);
+
     const token = authorization.split(" ")[1];
     if (!token) {
       return res.status(401).json({ error: "Invalid token format" });

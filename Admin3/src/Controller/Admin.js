@@ -88,9 +88,6 @@ exports.CreateCourse = async (req, res, next) => {
     const uniquePart = uuid.v4().replace(/-/g, "").substr(0, 6);
     const courseID = `${prefix}${uniquePart}`;
 
-    const inputString = courseName;
-    const courseroute = inputString.replace(/[\s-]+/g, "-");
-
     const newCourse = new courseModel({
       courseName,
       courseroute,
@@ -105,6 +102,8 @@ exports.CreateCourse = async (req, res, next) => {
         requirements,
         totalHours,
       },
+      introVideo:"",
+      thumbnail:"",
       courseCategory: categories,
       instructors: instructors,
       whatWillYouLearn,
