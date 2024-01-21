@@ -9,6 +9,7 @@ const {
   UploadChapterContent,
   DeleteChapter,
   DeleteChapterContent,
+  editChapterName,
 } = require("../Controller/Course");
 
 router.route("/courses/:courseId").get(requireAuth, GetCoursebyId);
@@ -23,6 +24,9 @@ router
 router
   .route("/courses/:courseId/delete-chapter/:chapterId")
   .delete(requireAuth, DeleteChapter);
+router
+  .route("/courses/:courseId/edit-chapterName/:chapterId")
+  .put(requireAuth, editChapterName);
 router
   .route("/courses/:courseId/delete-content/:chapterId/:contentId")
   .delete(requireAuth, DeleteChapterContent);
