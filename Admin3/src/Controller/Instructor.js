@@ -54,7 +54,6 @@ exports.InstructorLogin = async (req, res, next) => {
       isInstructor: instructor.isInstructor,
     });
   } catch (error) {
-    sendErrorEmail(email, "Someone tried to Login to Admin Panel");
     res.status(500).json({
       message: "Internal server error",
       error: "Internal server error",
