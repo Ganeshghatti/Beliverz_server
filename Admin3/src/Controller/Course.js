@@ -196,13 +196,58 @@ exports.DeleteChapter = async (req, res, next) => {
     if (chapterIndex === -1) {
       return res
         .status(404)
-        .json({ error: `Chapter with ID ${chapterId} not found in the course` });
+        .json({
+          error: `Chapter with ID ${chapterId} not found in the course`,
+        });
     }
 
     course.chapters.splice(chapterIndex, 1);
     course.courseDetail.numberOfChapters--;
 
     await course.save();
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.DeleteChapterContent = async (req, res, next) => {
+  const { courseId, chapterId, contentId } = req.params;
+
+  try {
+    const course = await courseModel.findOne({ courseId });
+
+    if (!course) {
+      return res
+        .status(404)
+        .json({ error: `Course with ID ${courseId} not found` });
+    }
+
+    const chapterIndex = course.chapters.findIndex(
+      (item) => item.chapterId === chapterId
+    );
+
+    if (chapterIndex !== -1) {
+      const contentIndex = course.chapters[chapterIndex].content.findIndex(
+        (item) => item.contentId === contentId
+      );
+
+      if (contentIndex !== -1) {
+        course.chapters[chapterIndex].content.splice(contentIndex, 1);
+      } else {
+        return res.status(404).json({
+          error: `Content with ID ${contentId} not found in the chapter`,
+        });
+      }
+    } else {
+      return res.status(404).json({
+        error: `Chapter with ID ${chapterId} not found in the course`,
+      });
+    }
+
+    await course.save();
+
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
