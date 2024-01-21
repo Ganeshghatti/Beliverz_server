@@ -67,6 +67,7 @@ exports.EditCourse = async (req, res, next) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.newChapter = async (req, res, next) => {
   const { courseId } = req.params;
   const { chapterName, email } = req.body;
@@ -99,6 +100,7 @@ exports.newChapter = async (req, res, next) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.GetInstructorsByCORSID = async (req, res, next) => {
   const { courseId } = req.params;
 
@@ -168,6 +170,39 @@ exports.UploadChapterContent = async (req, res, next) => {
 
     await course.save();
 
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.DeleteChapter = async (req, res, next) => {
+  const { courseId, chapterId } = req.params;
+
+  try {
+    const course = await courseModel.findOne({ courseId });
+
+    if (!course) {
+      return res
+        .status(404)
+        .json({ error: `Course with ID ${courseId} not found` });
+    }
+
+    const chapterIndex = course.chapters.findIndex(
+      (chapter) => chapter.chapterId === chapterId
+    );
+
+    if (chapterIndex === -1) {
+      return res
+        .status(404)
+        .json({ error: `Chapter with ID ${chapterId} not found in the course` });
+    }
+
+    course.chapters.splice(chapterIndex, 1);
+    course.courseDetail.numberOfChapters--;
+
+    await course.save();
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
