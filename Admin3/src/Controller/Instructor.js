@@ -83,8 +83,6 @@ exports.getAccessibleCourseNames = async (req, res, next) => {
       }
     }
 
-    console.log("accessibleCourses", accessibleCourses);
-
     res.status(200).json({ courses: accessibleCourses });
   } catch (error) {
     console.error(error);

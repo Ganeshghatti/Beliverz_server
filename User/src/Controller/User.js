@@ -3,6 +3,7 @@ const categoryModel = require("../../../Model/Category");
 const courseModel = require("../../../Model/Course");
 const userModel = require("../../../Model/User");
 const formModel = require("../../../Model/Form");
+const instructorModel = require("../../../Model/Instructor");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -47,6 +48,7 @@ exports.register = async (req, res, next) => {
       username: userdata.username,
       email: userdata.email,
       password: hash,
+      createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
     });
 
     const newUser = await user.save();
@@ -106,7 +108,6 @@ exports.login = async (req, res, next) => {
 
 exports.GetAllCategory = async (req, res, next) => {
   try {
-    console.log("object");
     const allCategory = await categoryModel.find();
     res.status(200).json({ category: allCategory });
   } catch (error) {
@@ -133,8 +134,27 @@ exports.GetAllCourseNames = async (req, res, next) => {
       courselanguage: course.language || null,
     }));
 
+    const ifModifiedSince = req.headers["if-modified-since"];
+
+    if (ifModifiedSince) {
+      const lastModified = moment(ifModifiedSince);
+
+      const isModified = allcourses.some((course) =>
+        lastModified.isBefore(course.updatedAt)
+      );
+
+      if (!isModified) {
+        return res.status(304).end();
+      }
+    }
+    const latestUpdatedAt = moment(
+      Math.max(...allcourses.map((course) => moment(course.updatedAt)))
+    );
+    res.setHeader("Last-Modified", latestUpdatedAt.toISOString());
+
     res.status(200).json({ courses: simplifiedCourses });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Oops! Please try again later" });
   }
 };
@@ -171,16 +191,187 @@ exports.postForm = async (req, res, next) => {
 
 exports.GetCoursebyId = async (req, res, next) => {
   const { courseId } = req.params;
-  console.log(courseId);
+
   try {
     const course = await courseModel.findOne({ courseId });
-
     if (!course) {
       return res.status(404).json({ error: `Course not found` });
     }
     res.status(200).json({ course: course });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.GetInstructorsByCORSID = async (req, res, next) => {
+  const { courseId } = req.params;
+
+  try {
+    const instructors = await instructorModel
+      .find({ coursesAllowed: { $elemMatch: { courseId: courseId } } })
+      .select("instructorName instructorId photo");
+
+    res.status(200).json({ instructors: instructors });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
+
+exports.GetChaptersList = async (req, res, next) => {
+  const { courseId } = req.params;
+
+  try {
+    const course = await courseModel.findOne({ courseId });
+    if (!course) {
+      return res.status(404).json({ error: `Course not found` });
+    }
+
+    const filteredChapters = course.chapters.map(
+      ({ chapterName, chapterId, content }) => ({
+        chapterName,
+        chapterId,
+        content,
+      })
+    );
+
+    res.status(200).json({ chapters: filteredChapters });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.EnrollCourse = async (req, res, next) => {
+  const { courseId } = req.params;
+  const { email, bodycourseId } = req.body;
+
+  try {
+    if (req.user.email === email) {
+      const user = await userModel.findOne({ email });
+
+      const isEnrolled = user.coursesEnrolled.some(
+        (course) => course.courseId === courseId
+      );
+
+      if (isEnrolled) {
+        return res
+          .status(400)
+          .json({ error: "User is already enrolled in this course." });
+      }
+
+      const course = await courseModel.findOne({ courseId });
+      course.courseInfo.totalEnrollments++;
+      await course.save();
+
+      user.coursesEnrolled.push({
+        courseId,
+        enrolldate: moment().add(10, "days").calendar(),
+        enrolltime: moment().format("LT"),
+        currentlywatching: {
+          courseId: course.courseId,
+          chapterId: course.chapters[0].chapterId,
+          contentId: course.chapters[0].content[0].contentId,
+        },
+      });
+      await user.save();
+      console.log(
+        course.courseId,
+        course.chapters[0].chapterId,
+        course.chapters[0].content[0].contentId
+      );
+      res.status(200).json({
+        courseId: course.courseId,
+        chapterId: course.chapters[0].chapterId,
+        contentId: course.chapters[0].content[0].contentId,
+      });
+    } else {
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.GetCourseContent = async (req, res, next) => {
+  console.log(req.params);
+  const { courseId, email, chapterId, contentId } = req.params;
+
+  try {
+    const course = await courseModel.findOne({ courseId });
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "Invalid User" });
+    }
+
+    const isEnrolled = user.coursesEnrolled.some(
+      (enrolledCourse) => enrolledCourse.courseId === courseId
+    );
+
+    if (!isEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "User is not enrolled in this course." });
+    }
+
+    const currentlywatchingIndex = user.coursesEnrolled.findIndex(
+      (enrolledCourse) => enrolledCourse.courseId === courseId
+    );
+
+    user.coursesEnrolled[currentlywatchingIndex].currentlywatching = {
+      courseId,
+      chapterId,
+      contentId,
+    };
+
+    await user.save();
+
+    const chapter = course.chapters.find((c) => c.chapterId === chapterId);
+
+    if (!chapter) {
+      return res.status(404).json({ error: "Chapter not found" });
+    }
+
+    const content = chapter.content.find((c) => c.contentId === contentId);
+
+    if (!content) {
+      return res.status(404).json({ error: "Content not found" });
+    }
+    console.log(
+      content,
+      user.coursesEnrolled[currentlywatchingIndex].currentlywatching
+    );
+    res.status(200).json({
+      content,
+      currentlywatching:
+        user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.MyAccount = async (req, res, next) => {
+  const { email } = req.params;
+  try {
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({ user });
+  } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

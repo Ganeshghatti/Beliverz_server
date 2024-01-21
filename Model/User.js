@@ -7,11 +7,11 @@ const UserSchema = new mongoose.Schema({
   },
   password: String,
   createdAt: {
-    type: Date,
+    type: String,
     immutable: true,
-    default: () => Date.now(),
   },
   username: String,
+  coursesEnrolled:[Object]
 });
 
 module.exports = mongoose.model("users", UserSchema);

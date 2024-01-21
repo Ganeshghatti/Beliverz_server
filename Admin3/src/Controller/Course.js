@@ -60,7 +60,113 @@ exports.EditCourse = async (req, res, next) => {
     course.introVideo = updatedCourseDetails.introVideo;
     course.thumbnail = updatedCourseDetails.thumbnail;
 
-    await course.save()
+    await course.save();
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+exports.newChapter = async (req, res, next) => {
+  const { courseId } = req.params;
+  const { chapterName, email } = req.body;
+
+  const prefix = "CHAP";
+  const uniquePart = uuid.v4().replace(/-/g, "").substr(0, 6);
+  const chapterId = `${prefix}${uniquePart}`;
+
+  try {
+    const course = await courseModel.findOne({ courseId });
+
+    if (!course) {
+      return res
+        .status(404)
+        .json({ error: `Course with ID ${courseId} not found` });
+    }
+
+    course.chapters.push({
+      chapterName,
+      chapterId,
+      createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
+      createdBy: email,
+    });
+    await course.save();
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+exports.GetInstructorsByCORSID = async (req, res, next) => {
+  const { courseId } = req.params;
+
+  try {
+    const instructors = await instructorModel.find({
+      coursesAllowed: { $elemMatch: { courseId: courseId } },
+    });
+
+    res.status(200).json({ instructors: instructors });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
+
+exports.UploadChapterContent = async (req, res, next) => {
+  const { courseId } = req.params;
+  const { content, chapterId, email } = req.body;
+  console.log(req.body);
+  try {
+    const course = await courseModel.findOne({ courseId });
+
+    if (!course) {
+      return res
+        .status(404)
+        .json({ error: `Course with ID ${courseId} not found` });
+    }
+
+    const chapterIndex = course.chapters.findIndex(
+      (item) => item.chapterId === chapterId
+    );
+
+    if (chapterIndex !== -1) {
+      let newContent = {};
+
+      switch (content.type) {
+        case "Video":
+          newContent = {
+            contentUrl: content.VideoURL,
+            contentName: content.VideoName,
+            contentId: content.contentId,
+          };
+          break;
+        case "Pdf":
+          newContent = {
+            contentUrl: content.PdfURL,
+            contentName: content.PdfName,
+            contentId: content.contentId,
+          };
+          break;
+        default:
+          return res.status(400).json({ error: "Invalid content type" });
+      }
+
+      newContent.type = content.type;
+      newContent.createdAt = moment().format("MMMM Do YYYY, h:mm:ss a");
+      newContent.createdBy = email;
+
+      course.chapters[chapterIndex].content.push(newContent);
+    } else {
+      return res.status(404).json({
+        error: `Chapter with ID ${chapterId} not found in the course`,
+      });
+    }
+
+    course.courseDetail.numberOfChapters++;
+    await course.save();
+
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);

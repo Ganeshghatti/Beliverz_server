@@ -42,8 +42,18 @@ const courseSchema = new mongoose.Schema({
   },
   chapters: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Chapter",
+      chapterName: {
+        type: String,
+        required: true,
+      },
+      chapterId: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+      createdAt: String,
+      createdBy: String,
+      content: [Object],
     },
   ],
   courseCategory: [
@@ -64,7 +74,7 @@ const courseSchema = new mongoose.Schema({
   ],
   introVideo: {
     type: String,
-    default:""
+    default: "",
   },
   thumbnail: {
     type: String,
@@ -83,6 +93,7 @@ const courseSchema = new mongoose.Schema({
   language: String,
   createdAt: String,
   createdBy: String,
+  lastUpdate:String,
   rating: {
     type: Number,
     default: 0,
@@ -90,7 +101,7 @@ const courseSchema = new mongoose.Schema({
     max: 5,
     decimal: true,
   },
-  NumberOfRatings:{
+  NumberOfRatings: {
     type: Number,
     default: 0,
   },

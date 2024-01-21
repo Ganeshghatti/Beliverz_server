@@ -199,6 +199,7 @@ exports.CreateInstructor = async (req, res, next) => {
         filteredCourses.instructors.push({
           instructorId: instructorID,
           instructorName: name,
+          photo:""
         });
 
         await filteredCourses.save();

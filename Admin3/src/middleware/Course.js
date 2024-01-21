@@ -5,6 +5,7 @@ const instructorModel = require("../../../Model/Instructor");
 const courserequireAuth = async (req, res, next) => {
   try {
     const { authorization } = req.headers;
+
     if (!authorization) {
       return res.status(401).json({ error: "Authorization token required" });
     }
