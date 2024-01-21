@@ -265,8 +265,7 @@ exports.EditCategory = async (req, res, next) => {
   console.log(req.body);
   try {
     for (const categoryUpdate of categories) {
-      const { categoryId, courses, categoryImg } = categoryUpdate;
-      console.log(categoryImg);
+      const { categoryId, courses, categoryImg,categoryName } = categoryUpdate;
       const category = await categoryModel.findOne({ categoryId });
       console.log(category);
 
@@ -276,6 +275,7 @@ exports.EditCategory = async (req, res, next) => {
           .json({ error: `Category with ID ${categoryId} not found` });
       }
       category.categoryImg = categoryImg;
+      category.categoryName=categoryName;
       category.courses = courses;
       await category.save();
     }
