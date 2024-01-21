@@ -5,7 +5,7 @@ const instructorModel = require("../../../Model/Instructor");
 const courserequireAuth = async (req, res, next) => {
   try {
     const { authorization } = req.headers;
-
+    console.log(authorization);
     if (!authorization) {
       return res.status(401).json({ error: "Authorization token required" });
     }
@@ -15,14 +15,21 @@ const courserequireAuth = async (req, res, next) => {
       return res.status(401).json({ error: "Invalid token format" });
     }
 
-    const admindecodedToken = jwt.verify(token, process.env.ADMINJWTSECRET);
-    const adminId = admindecodedToken.userId;
+    try {
+      const admindecodedToken = jwt.verify(token, process.env.ADMINJWTSECRET);
+      const adminId = admindecodedToken.userId;
 
-    if (adminId) {
-      const admin = await adminModel.findById(adminId);
-      req.admin = admin;
-      next();
-    } else {
+      if (adminId) {
+        const admin = await adminModel.findById(adminId);
+        req.admin = admin;
+        next();
+        return;
+      }
+    } catch (adminError) {
+      // Token is not for admin, try decoding as instructor token
+    }
+
+    try {
       const instructordecodedToken = jwt.verify(
         token,
         process.env.INSTRUCTORJWTSECRET
@@ -31,12 +38,15 @@ const courserequireAuth = async (req, res, next) => {
 
       if (instructorId) {
         const instructor = await instructorModel.findById(instructorId);
-        res.locals.instructor = instructor;
+        req.instructor = instructor;
         next();
-      } else {
-        return res.status(401).json({ error: "Request is not authorized" });
+        return;
       }
+    } catch (instructorError) {
+      // Token is not for instructor
     }
+
+    return res.status(401).json({ error: "Request is not authorized" });
   } catch (error) {
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({ error: "Token has expired" });
