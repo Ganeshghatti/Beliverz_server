@@ -2,6 +2,7 @@ const adminModel = require("../../../Model/Admin");
 const instructorModel = require("../../../Model/Instructor");
 const courseModel = require("../../../Model/Course");
 const categoryModel = require("../../../Model/Category");
+const userModel = require("../../../Model/User");
 const formModel = require("../../../Model/Form")
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -378,6 +379,17 @@ exports.GetFormData = async (req, res, next) => {
   }
 };
 
+exports.GetAllUsers = async (req, res, next) => {
+  try {
+    const allusers = await userModel.find();
+    res.status(200).json({ users: allusers });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
 // const createCategory = async () => {
 //   try {
 //     const prefix = "CATE";

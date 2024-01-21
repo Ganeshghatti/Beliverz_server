@@ -11,6 +11,7 @@ const {
   DeleteInstructor,
   ChangePassword,
   GetFormData,
+  GetAllUsers,
 } = require("../Controller/Admin");
 const requireAuth = require("../middleware/Admin");
 const { CreateCourse, GetAllCourse } = require("../Controller/Admin");
@@ -30,5 +31,6 @@ router.route("/admin/edit-instructor/:instructorId").patch(EditInstructor);
 router.route("/admin/delete-instructor/:instructorId").delete(DeleteInstructor);
 router.route("/admin/change-password").post(ChangePassword);
 router.route("/admin/get-formdata").get(GetFormData);
+router.route("/admin/get-all-users").get(GetAllUsers);
 
 module.exports = router;
