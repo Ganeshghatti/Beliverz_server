@@ -90,6 +90,8 @@ exports.newChapter = async (req, res, next) => {
       createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
       createdBy: email,
     });
+    course.courseDetail.numberOfChapters++;
+
     await course.save();
     return res.status(200).json({ success: true });
   } catch (error) {
@@ -164,7 +166,6 @@ exports.UploadChapterContent = async (req, res, next) => {
       });
     }
 
-    course.courseDetail.numberOfChapters++;
     await course.save();
 
     return res.status(200).json({ success: true });

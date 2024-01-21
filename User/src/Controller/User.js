@@ -134,24 +134,6 @@ exports.GetAllCourseNames = async (req, res, next) => {
       courselanguage: course.language || null,
     }));
 
-    const ifModifiedSince = req.headers["if-modified-since"];
-
-    if (ifModifiedSince) {
-      const lastModified = moment(ifModifiedSince);
-
-      const isModified = allcourses.some((course) =>
-        lastModified.isBefore(course.updatedAt)
-      );
-
-      if (!isModified) {
-        return res.status(304).end();
-      }
-    }
-    const latestUpdatedAt = moment(
-      Math.max(...allcourses.map((course) => moment(course.updatedAt)))
-    );
-    res.setHeader("Last-Modified", latestUpdatedAt.toISOString());
-
     res.status(200).json({ courses: simplifiedCourses });
   } catch (error) {
     console.log(error);
@@ -364,12 +346,25 @@ exports.GetCourseContent = async (req, res, next) => {
 
 exports.MyAccount = async (req, res, next) => {
   const { email } = req.params;
-  try {
 
+  try {
     const user = await userModel.findOne({ email });
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    for (const item of user.coursesEnrolled) {
+      const course = await courseModel.findOne({ courseId: item.courseId });
+
+      if (course) {
+        item.courseName = course.courseName;
+        item.thumbnail = course.thumbnail;
+      } else {
+        console.error(`Course not found for courseId: ${item.courseId}`);
+      }
+    }
+
     res.status(200).json({ user });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
