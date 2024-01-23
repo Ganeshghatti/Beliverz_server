@@ -336,7 +336,6 @@ exports.GetCourseContent = async (req, res, next) => {
           user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
       });
     }
-    await user.save();
 
     res.status(200).json({
       content,
