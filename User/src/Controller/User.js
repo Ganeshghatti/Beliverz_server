@@ -321,7 +321,7 @@ exports.GetCourseContent = async (req, res, next) => {
     }
 
     const content = chapter.content.find((c) => c.contentId === contentId);
-
+    console.log(content);
     if (!content) {
       user.coursesEnrolled[currentlywatchingIndex].currentlywatching = {
         courseId: course.courseId,
