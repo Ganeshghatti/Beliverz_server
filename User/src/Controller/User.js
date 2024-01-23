@@ -260,11 +260,7 @@ exports.EnrollCourse = async (req, res, next) => {
         },
       });
       await user.save();
-      console.log(
-        course.courseId,
-        course.chapters[0].chapterId,
-        course.chapters[0].content[0].contentId
-      );
+
       res.status(200).json({
         courseId: course.courseId,
         chapterId: course.chapters[0].chapterId,
@@ -327,12 +323,21 @@ exports.GetCourseContent = async (req, res, next) => {
     const content = chapter.content.find((c) => c.contentId === contentId);
 
     if (!content) {
-      return res.status(404).json({ error: "Content not found" });
+      user.coursesEnrolled[currentlywatchingIndex].currentlywatching = {
+        courseId: course.courseId,
+        chapterId: course.chapters[0].chapterId,
+        contentId: course.chapters[0].content[0].contentId,
+      };
+      await user.save();
+
+      return res.status(200).json({
+        content: course.chapters[0].content[0],
+        currentlywatching:
+          user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
+      });
     }
-    console.log(
-      content,
-      user.coursesEnrolled[currentlywatchingIndex].currentlywatching
-    );
+    await user.save();
+
     res.status(200).json({
       content,
       currentlywatching:
