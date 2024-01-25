@@ -276,7 +276,6 @@ exports.EnrollCourse = async (req, res, next) => {
 };
 
 exports.GetCourseContent = async (req, res, next) => {
-  console.log(req.params);
   const { courseId, email, chapterId, contentId } = req.params;
 
   try {
@@ -315,7 +314,7 @@ exports.GetCourseContent = async (req, res, next) => {
     await user.save();
 
     const chapter = course.chapters.find((c) => c.chapterId === chapterId);
-
+    console.log(chapter);
     if (!chapter) {
       return res.status(404).json({ error: "Chapter not found" });
     }
