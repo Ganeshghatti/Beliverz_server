@@ -412,7 +412,7 @@ exports.SubmitFeedback = async (req, res, next) => {
     console.log(updateduser.coursesEnrolled);
 
     const course = await courseModel.findOne({ courseId });
-    course.courseInfo.NumberOfRatings += 1;
+    course.NumberOfRatings += 1;
 
     course.reviews.push(newReview);
 
