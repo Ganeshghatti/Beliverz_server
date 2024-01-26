@@ -371,7 +371,6 @@ exports.MyAccount = async (req, res, next) => {
   }
 };
 
-
 exports.SubmitFeedback = async (req, res, next) => {
   const { feedback, courseId, email } = req.body;
 
