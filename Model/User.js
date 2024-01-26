@@ -11,7 +11,19 @@ const UserSchema = new mongoose.Schema({
     immutable: true,
   },
   username: String,
-  coursesEnrolled:[Object]
+  coursesEnrolled: [
+    {
+      courseId: String,
+      enrolldate: String,
+      enrolltime: String,
+      feedback: Object,
+      currentlywatching: {
+        courseId: String,
+        chapterId: String,
+        contentId: String,
+      },
+    },
+  ],
 });
 
 module.exports = mongoose.model("users", UserSchema);

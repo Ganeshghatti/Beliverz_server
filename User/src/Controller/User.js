@@ -232,43 +232,40 @@ exports.EnrollCourse = async (req, res, next) => {
   const { email, bodycourseId } = req.body;
 
   try {
-    if (req.user.email === email) {
-      const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email });
 
-      const isEnrolled = user.coursesEnrolled.some(
-        (course) => course.courseId === courseId
-      );
+    const isEnrolled = user.coursesEnrolled.some(
+      (course) => course.courseId === courseId
+    );
 
-      if (isEnrolled) {
-        return res
-          .status(400)
-          .json({ error: "User is already enrolled in this course." });
-      }
+    if (isEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "User is already enrolled in this course." });
+    }
 
-      const course = await courseModel.findOne({ courseId });
-      course.courseInfo.totalEnrollments++;
-      await course.save();
+    const course = await courseModel.findOne({ courseId });
+    course.courseInfo.totalEnrollments++;
+    await course.save();
 
-      user.coursesEnrolled.push({
-        courseId,
-        enrolldate: moment().add(10, "days").calendar(),
-        enrolltime: moment().format("LT"),
-        currentlywatching: {
-          courseId: course.courseId,
-          chapterId: course.chapters[0].chapterId,
-          contentId: course.chapters[0].content[0].contentId,
-        },
-      });
-      await user.save();
-
-      res.status(200).json({
+    const enrollmentData = {
+      courseId,
+      enrolldate: moment().add(10, "days").calendar(),
+      enrolltime: moment().format("LT"),
+      currentlywatching: {
         courseId: course.courseId,
         chapterId: course.chapters[0].chapterId,
         contentId: course.chapters[0].content[0].contentId,
-      });
-    } else {
-      return res.status(500).json({ error: "Internal server error" });
-    }
+      },
+    };
+    user.coursesEnrolled.push(enrollmentData);
+
+    await user.save();
+
+    res.status(200).json({
+      currentlywatching: enrollmentData.currentlywatching,
+      feedback: "",
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
@@ -314,14 +311,13 @@ exports.GetCourseContent = async (req, res, next) => {
     await user.save();
 
     const chapter = course.chapters.find((c) => c.chapterId === chapterId);
-    console.log(chapter);
     if (!chapter) {
       return res.status(404).json({ error: "Chapter not found" });
     }
 
     const content = chapter.content.find((c) => c.contentId === contentId);
-    console.log(content);
-    if (!content) {
+
+    if (content == null) {
       user.coursesEnrolled[currentlywatchingIndex].currentlywatching = {
         courseId: course.courseId,
         chapterId: course.chapters[0].chapterId,
@@ -330,16 +326,17 @@ exports.GetCourseContent = async (req, res, next) => {
       await user.save();
 
       return res.status(200).json({
+        feedback: user.coursesEnrolled[currentlywatchingIndex].feedback,
         content: course.chapters[0].content[0],
         currentlywatching:
           user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
       });
     }
-
     res.status(200).json({
       content,
       currentlywatching:
         user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
+      feedback: user.coursesEnrolled[currentlywatchingIndex].feedback,
     });
   } catch (error) {
     console.error(error);
@@ -371,5 +368,69 @@ exports.MyAccount = async (req, res, next) => {
     res.status(200).json({ user });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
+exports.SubmitFeedback = async (req, res, next) => {
+  const { feedback, courseId, email } = req.body;
+
+  try {
+    const user = await userModel.findOne({ email });
+
+    const currentlywatchingIndex = user.coursesEnrolled.findIndex(
+      (enrolledCourse) => enrolledCourse.courseId === courseId
+    );
+
+    if (currentlywatchingIndex === -1) {
+      return res
+        .status(400)
+        .json({ error: "User is not enrolled in this course." });
+    }
+
+    if (
+      user.coursesEnrolled[currentlywatchingIndex].feedback &&
+      user.coursesEnrolled[currentlywatchingIndex].feedback.rating > 0
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Feedback already submitted for this course." });
+    }
+
+    const newReview = {
+      rating: feedback.rating,
+      comment: feedback.comment,
+      reviewby: email,
+      reviewdate: moment().add(10, "days").calendar(),
+      reviewtime: moment().format("LT"),
+    };
+    user.coursesEnrolled[currentlywatchingIndex].feedback = newReview;
+
+    await user.save();
+
+    const updateduser = await userModel.findOne({ email });
+    console.log(updateduser.coursesEnrolled);
+
+    const course = await courseModel.findOne({ courseId });
+    course.courseInfo.NumberOfRatings += 1;
+
+    course.reviews.push(newReview);
+
+    let totalRating = course.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    course.rating = totalRating / course.reviews.length;
+
+    await course.save();
+
+    res.status(200).json({
+      feedback: user.coursesEnrolled[currentlywatchingIndex].feedback,
+      currentlywatching:
+        user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -12,6 +12,7 @@ const {
   GetCourseContent,
   GetChaptersList,
   MyAccount,
+  SubmitFeedback,
 } = require("../Controller/User");
 const requireAuth = require("../middleware/User");
 
@@ -26,5 +27,6 @@ router.route("/user/courses/:courseId/course-enroll").post(requireAuth,EnrollCou
 router.route("/user/courses/:courseId/:email/:chapterId/:contentId").get(requireAuth,GetCourseContent);
 router.route("/user/courses/:courseId/get-chapters-list").get(requireAuth,GetChaptersList);
 router.route("/user/account/:email").get(requireAuth,MyAccount);
+router.route("/user/courses/:courseId/:email/submitfeedback").post(requireAuth,SubmitFeedback);
 
 module.exports = router;

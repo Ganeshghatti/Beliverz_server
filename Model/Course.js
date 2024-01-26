@@ -66,12 +66,7 @@ const courseSchema = new mongoose.Schema({
       },
     },
   ],
-  reviews: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Review",
-    },
-  ],
+  reviews: [Object],
   introVideo: {
     type: String,
     default: "",
@@ -93,7 +88,7 @@ const courseSchema = new mongoose.Schema({
   language: String,
   createdAt: String,
   createdBy: String,
-  lastUpdate:String,
+  lastUpdate: String,
   rating: {
     type: Number,
     default: 0,

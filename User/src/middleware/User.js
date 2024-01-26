@@ -12,7 +12,6 @@ const requireAuth = async (req, res, next) => {
   try {
     const userid = jwt.verify(token, process.env.JWTSECRET).userId;
     const user = await User.findOne({ _id: userid });
-
     if (user) {
       req.user = user;
     } else {
