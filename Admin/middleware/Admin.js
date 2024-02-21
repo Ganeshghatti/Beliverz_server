@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
-const instructorModel = require("../../../Model/Instructor");
+const adminModel = require("../../Model/Admin");
 
-const instructorrequireAuth = async (req, res, next) => {
+const requireAuth = async (req, res, next) => {
   try {
     const { authorization } = req.headers;
     if (!authorization) {
@@ -14,17 +14,16 @@ const instructorrequireAuth = async (req, res, next) => {
       return res.status(401).json({ error: "Invalid token format" });
     }
 
-    const decodedToken = jwt.verify(token, process.env.INSTRUCTORJWTSECRET);
-    const instructorId = decodedToken.userId;
+    const decodedToken = jwt.verify(token, process.env.ADMINJWTSECRET);
+    const adminId = decodedToken.userId;
 
-    const instructor = await instructorModel.findById(instructorId);
+    const admin = await adminModel.findById(adminId);
 
-    if (!instructor) {
+    if (!admin) {
       return res.status(401).json({ error: "Request is not authorized" });
     }
-    res.locals.instructor = instructor;
 
-    req.instructor = instructor;
+    req.admin = admin;
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {
@@ -35,4 +34,4 @@ const instructorrequireAuth = async (req, res, next) => {
   }
 };
 
-module.exports = instructorrequireAuth;
+module.exports = requireAuth;

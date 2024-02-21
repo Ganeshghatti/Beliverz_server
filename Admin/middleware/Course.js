@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-const adminModel = require("../../../Model/Admin");
-const instructorModel = require("../../../Model/Instructor");
+const adminModel = require("../../Model/Admin");
+const instructorModel = require("../../Model/Instructor");
 
 const courserequireAuth = async (req, res, next) => {
   try {

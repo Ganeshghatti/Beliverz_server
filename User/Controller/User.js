@@ -1,9 +1,9 @@
-const users = require("../../../Model/User");
-const categoryModel = require("../../../Model/Category");
-const courseModel = require("../../../Model/Course");
-const userModel = require("../../../Model/User");
-const formModel = require("../../../Model/Form");
-const instructorModel = require("../../../Model/Instructor");
+const users = require("../../Model/User");
+const categoryModel = require("../../Model/Category");
+const courseModel = require("../../Model/Course");
+const userModel = require("../../Model/User");
+const formModel = require("../../Model/Form");
+const instructorModel = require("../../Model/Instructor");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -348,23 +348,23 @@ exports.MyAccount = async (req, res, next) => {
   const { email } = req.params;
 
   try {
-    const user = await userModel.findOne({ email });
+    const databaseuser = await userModel.findOne({ email });
 
-    if (!user) {
+    if (!databaseuser) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    for (const item of user.coursesEnrolled) {
+    const user = [];
+    for (const item of databaseuser.coursesEnrolled) {
       const course = await courseModel.findOne({ courseId: item.courseId });
 
       if (course) {
-        item.courseName = course.courseName;
-        item.thumbnail = course.thumbnail;
-      } else {
-        console.error(`Course not found for courseId: ${item.courseId}`);
+        user[index] = {
+          courseName: course.courseName,
+          thumbnail: course.thumbnail,
+          
+        };
       }
     }
-
     res.status(200).json({ user });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });

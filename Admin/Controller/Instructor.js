@@ -1,5 +1,5 @@
-const instructorModel = require("../../../Model/Instructor");
-const courseModel = require("../../../Model/Course");
+const instructorModel = require("../../Model/Instructor");
+const courseModel = require("../../Model/Course");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
