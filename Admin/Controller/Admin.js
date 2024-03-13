@@ -3,7 +3,8 @@ const instructorModel = require("../../Model/Instructor");
 const courseModel = require("../../Model/Course");
 const categoryModel = require("../../Model/Category");
 const userModel = require("../../Model/User");
-const formModel = require("../../Model/Form")
+const formModel = require("../../Model/Form");
+const testseriesModel = require("../../Model/TestSeries");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -102,8 +103,8 @@ exports.CreateCourse = async (req, res, next) => {
         requirements,
         totalHours,
       },
-      introVideo:"",
-      thumbnail:"",
+      introVideo: "",
+      thumbnail: "",
       courseCategory: categories,
       instructors: instructors,
       whatWillYouLearn,
@@ -169,7 +170,17 @@ exports.GetAllCourse = async (req, res, next) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
-
+exports.GetAllTestSeries = async (req, res, next) => {
+  try {
+    const allTestseries = await testseriesModel.find();
+    res.status(200).json({ testseries: allTestseries });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
 exports.CreateInstructor = async (req, res, next) => {
   const { name, email, password, courses } = req.body;
   try {
@@ -200,7 +211,7 @@ exports.CreateInstructor = async (req, res, next) => {
         filteredCourses.instructors.push({
           instructorId: instructorID,
           instructorName: name,
-          photo:""
+          photo: "",
         });
 
         await filteredCourses.save();
@@ -266,7 +277,7 @@ exports.EditCategory = async (req, res, next) => {
   console.log(req.body);
   try {
     for (const categoryUpdate of categories) {
-      const { categoryId, courses, categoryImg,categoryName } = categoryUpdate;
+      const { categoryId, courses, categoryImg, categoryName } = categoryUpdate;
       const category = await categoryModel.findOne({ categoryId });
       console.log(category);
 
@@ -276,7 +287,7 @@ exports.EditCategory = async (req, res, next) => {
           .json({ error: `Category with ID ${categoryId} not found` });
       }
       category.categoryImg = categoryImg;
-      category.categoryName=categoryName;
+      category.categoryName = categoryName;
       category.courses = courses;
       await category.save();
     }
@@ -390,6 +401,70 @@ exports.GetAllUsers = async (req, res, next) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
+
+exports.CreateTestSeries = async (req, res, next) => {
+  const {
+    testseriesName,
+    payment,
+    amountInINR,
+    testseriesDescription,
+    testInstructions,
+    selectedInstructors,
+    maxTime,
+    instructors,
+  } = req.body;
+
+  try {
+    const prefix = "TEST";
+    const uniquePart = uuid.v4().replace(/-/g, "").substr(0, 6);
+    const testseriesId = `${prefix}${uniquePart}`;
+
+    const newTestSeries = new testseriesModel({
+      testseriesName,
+      testseriesId,
+      payment,
+      maxTime:maxTime,
+      TestSeriesDescription:testseriesDescription,
+      thumbnail: "",
+      totalEnrollments:0,
+      instructors,
+      testInstructions,
+      createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
+      createdBy: req.admin.email,
+    });
+    if (payment === "paid") {
+      newTestSeries.amountInINR = amountInINR;
+    } else if (payment === "free") {
+      newTestSeries.amountInINR = 0;
+    }
+
+    await newTestSeries.save();
+
+    for (let i = 0; i < instructors.length; i++) {
+      const filteredinstructors = await instructorModel.findOne({
+        instructorId: instructors[i].instructorId,
+      });
+      if (filteredinstructors) {
+        filteredinstructors.testseriesAllowed.push({
+          testseriesId: testseriesId,
+          testseriesName: testseriesName,
+        });
+
+        await filteredinstructors.save();
+      }
+    }
+
+    res
+      .status(201)
+      .json({ message: "Test Series created successfully", testseries: newTestSeries });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
+
 // const createCategory = async () => {
 //   try {
 //     const prefix = "CATE";

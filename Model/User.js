@@ -11,6 +11,8 @@ const UserSchema = new mongoose.Schema({
     immutable: true,
   },
   username: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: String,
   coursesEnrolled: [
     {
       courseId: String,
@@ -22,6 +24,17 @@ const UserSchema = new mongoose.Schema({
         chapterId: String,
         contentId: String,
       },
+    },
+  ],
+  testseriesEnrolled: [
+    {
+      testseriesId: String,
+      enrolldate: String,
+      enrolltime: String,
+      feedback: Object,
+      starttimer:String,
+      answers:[Object],
+      result:Number
     },
   ],
 });

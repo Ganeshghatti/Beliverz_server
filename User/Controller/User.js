@@ -2,6 +2,7 @@ const users = require("../../Model/User");
 const categoryModel = require("../../Model/Category");
 const courseModel = require("../../Model/Course");
 const userModel = require("../../Model/User");
+const testseriesModel = require("../../Model/TestSeries");
 const formModel = require("../../Model/Form");
 const instructorModel = require("../../Model/Instructor");
 const mongoose = require("mongoose");
@@ -16,6 +17,7 @@ const axios = require("axios");
 const moment = require("moment");
 const FormData = require("form-data");
 const { sendErrorEmail } = require("../utils/Errormail");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 app.use(cors());
@@ -141,6 +143,26 @@ exports.GetAllCourseNames = async (req, res, next) => {
   }
 };
 
+exports.GetAllTestseriesNames = async (req, res, next) => {
+  try {
+    const alltestseries = await testseriesModel.find();
+
+    const simplifiedtestseries = alltestseries.map((testseries) => ({
+      testseriesName: testseries.testseriesName || null,
+      testseriesId: testseries.testseriesId || null,
+      thumbnail: testseries.thumbnail || null,
+      payment: testseries.payment || null,
+      testseriesamountInINR: testseries.amountInINR || null,
+      totalEnrollments: testseries.totalEnrollments || null,
+      testserieserating: testseries.rating || null,
+    }));
+
+    res.status(200).json({ testseries: simplifiedtestseries });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Oops! Please try again later" });
+  }
+};
 exports.postForm = async (req, res, next) => {
   try {
     const { email, phone, name, query } = req.body;
@@ -185,7 +207,20 @@ exports.GetCoursebyId = async (req, res, next) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+exports.GetTestseriesById = async (req, res, next) => {
+  const { testseriesId } = req.params;
 
+  try {
+    const testseries = await testseriesModel.findOne({ testseriesId });
+    if (!testseries) {
+      return res.status(404).json({ error: `testseries not found` });
+    }
+    res.status(200).json({ testseries: testseries });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 exports.GetInstructorsByCORSID = async (req, res, next) => {
   const { courseId } = req.params;
 
@@ -202,7 +237,24 @@ exports.GetInstructorsByCORSID = async (req, res, next) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
+exports.GetInstructorsByTestseriesID = async (req, res, next) => {
+  const { testseriesId } = req.params;
 
+  try {
+    const instructors = await instructorModel
+      .find({
+        testseriessAllowed: { $elemMatch: { testseriesId: testseriesId } },
+      })
+      .select("instructorName instructorId photo");
+
+    res.status(200).json({ instructors: instructors });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
 exports.GetChaptersList = async (req, res, next) => {
   const { courseId } = req.params;
 
@@ -265,6 +317,47 @@ exports.EnrollCourse = async (req, res, next) => {
     res.status(200).json({
       currentlywatching: enrollmentData.currentlywatching,
       feedback: "",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+exports.EnrollTestseries = async (req, res, next) => {
+  const { testseriesId } = req.params;
+  const { email } = req.body;
+
+  try {
+    const user = await userModel.findOne({ email });
+
+    const isEnrolled = user.testseriesEnrolled.some(
+      (testseries) => testseries.testseriesId === testseriesId
+    );
+
+    if (isEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "User is already enrolled in this Testseries." });
+    }
+
+    const testseries = await testseriesModel.findOne({ testseriesId });
+    testseries.totalEnrollments++;
+    await testseries.save();
+
+    const enrollmentData = {
+      testseriesId,
+      enrolldate: moment().add(10, "days").format(),
+      enrolltime: moment().format("LT"),
+      starttimer: moment().format("MMMM Do YYYY, h:mm:ss a"),
+    };
+    user.testseriesEnrolled.push(enrollmentData);
+
+    await user.save();
+
+    res.status(200).json({
+      feedback: "",
+      testseriesId,
     });
   } catch (error) {
     console.error(error);
@@ -344,6 +437,151 @@ exports.GetCourseContent = async (req, res, next) => {
   }
 };
 
+exports.GetTestseriesContent = async (req, res, next) => {
+  const { testseriesId, email } = req.params;
+
+  try {
+    const testseries = await testseriesModel.findOne({ testseriesId });
+
+    if (!testseries) {
+      return res.status(404).json({ error: "Testseries not found" });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "Invalid User" });
+    }
+
+    const isEnrolled = user.testseriesEnrolled.some(
+      (enrolledtestseries) => enrolledtestseries.testseriesId === testseriesId
+    );
+
+    if (!isEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "User is not enrolled in this testseries." });
+    }
+
+    for (let i = 0; i < user.testseriesEnrolled.length; i++) {
+      if (user.testseriesEnrolled[i].testseriesId === testseriesId) {
+        const startTimer = moment(
+          user.testseriesEnrolled[i].starttimer,
+          "MMMM Do YYYY, h:mm:ss a"
+        );
+        const currentTime = moment();
+        const timeDifference = currentTime.diff(startTimer, "seconds");
+        const timeAvailable = testseries.maxTime*60 - timeDifference;
+        console.log(timeAvailable);
+
+        if (timeDifference > testseries.maxTime*60) {
+          return res.status(302).json({ error: "Time expired", redirectToResults: true });
+        } else {
+          return res.status(200).json({
+            testseries,
+            timeAvailable,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+exports.SubmitTest = async (req, res, next) => {
+  const { testseriesId, email } = req.params;
+  const { selectedOptions } = req.body;
+
+  try {
+    const testseries = await testseriesModel.findOne({ testseriesId });
+
+    if (!testseries) {
+      return res.status(404).json({ error: "Testseries not found" });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "Invalid User" });
+    }
+
+    const isEnrolled = user.testseriesEnrolled.some(
+      (enrolledtestseries) => enrolledtestseries.testseriesId === testseriesId
+    );
+
+    if (!isEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "User is not enrolled in this testseries." });
+    }
+
+    let result = 0;
+
+    for (let index = 0; index < selectedOptions.length; index++) {
+      for (let j = 0; j < testseries.questions.length; j++) {
+        if (testseries.questions[index].options[j].isCorrect) {
+          var correctOption = j;
+        }
+      }
+      const selectedOption = selectedOptions[index+1];
+      if (correctOption === selectedOption) {
+        result++;
+      }
+    }
+
+    user.testseriesEnrolled.forEach((enrolledtestseries) => {
+      if (enrolledtestseries.testseriesId === testseriesId) {
+        enrolledtestseries.result = result;
+        enrolledtestseries.answers = selectedOptions;
+      }
+    });
+
+    await user.save();
+
+    return res.status(200).json({ result });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+exports.CheckResult = async (req, res, next) => {
+  const { testseriesId, email } = req.params;
+
+  try {
+    const testseries = await testseriesModel.findOne({ testseriesId });
+
+    if (!testseries) {
+      return res.status(404).json({ error: "Testseries not found" });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "Invalid User" });
+    }
+
+    const isEnrolled = user.testseriesEnrolled.some(
+      (enrolledtestseries) => enrolledtestseries.testseriesId === testseriesId
+    );
+
+    if (!isEnrolled) {
+      return res
+        .status(400)
+        .json({ error: "User is not enrolled in this testseries." });
+    }
+
+    for (let i = 0; i < user.testseriesEnrolled.length; i++) {
+      if (user.testseriesEnrolled[i].testseriesId === testseriesId) {
+        return res.status(200).json({
+          result: user.testseriesEnrolled[i].result,
+          selectedOptions: user.testseriesEnrolled[i].answers,
+          testseries,
+        });
+      }
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 exports.MyAccount = async (req, res, next) => {
   const { email } = req.params;
 
@@ -361,7 +599,6 @@ exports.MyAccount = async (req, res, next) => {
         user[index] = {
           courseName: course.courseName,
           thumbnail: course.thumbnail,
-          
         };
       }
     }
@@ -429,7 +666,81 @@ exports.SubmitFeedback = async (req, res, next) => {
         user.coursesEnrolled[currentlywatchingIndex].currentlywatching,
     });
   } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.ForgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const resetToken = uuidv4();
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000;
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "ghattiganesh8@gmail.com",
+        pass: "gecy jkfr fzmy dcwf",
+      },
+    });
+    const mailOptions = {
+      from: "ghattiganesh8@gmail.com",
+      to: user.email,
+      subject: "Password Reset",
+      html:
+        `<p>You are receiving this email because you (or someone else) has requested the reset of the password for your account.</p>` +
+        `<p>Please click on the following link, or paste this into your browser to complete the process:</p>` +
+        `<a href="http://localhost:5173/reset/${resetToken}">Click Here</a>` +
+        `<p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: "Password reset email sent" });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.ResetPassword = async (req, res, next) => {
+  try {
+    const { resetPasswordToken } = req.params;
+    const { email, password } = req.body;
+
+    if (!validator.isStrongPassword(password)) {
+      return res.status(400).json({
+        error:
+          "Weak password. Must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.",
+      });
+    }
+
+    const user = await userModel.findOne({
+      email: email,
+      resetPasswordToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired " });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+    user.password = hash;
+    user.resetPasswordToken = "";
+    user.resetPasswordExpires = "";
+
+    await user.save();
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Server error" });
   }
 };

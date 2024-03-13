@@ -12,6 +12,8 @@ const {
   ChangePassword,
   GetFormData,
   GetAllUsers,
+  GetAllTestSeries,
+  CreateTestSeries,
 } = require("../Controller/Admin");
 const requireAuth = require("../middleware/Admin");
 const { CreateCourse, GetAllCourse } = require("../Controller/Admin");
@@ -19,7 +21,9 @@ const { CreateCourse, GetAllCourse } = require("../Controller/Admin");
 router.route("/admin/login").post(AdminLogin);
 
 router.route("/admin/create-course").post(requireAuth,CreateCourse);
+router.route("/admin/create-testseries").post(requireAuth,CreateTestSeries);
 router.route("/admin/get-all-course").get(requireAuth,GetAllCourse);
+router.route("/admin/get-all-testseries").get(requireAuth,GetAllTestSeries);
 router.route("/admin/create-instructor").post(requireAuth,CreateInstructor);
 router.route("/admin/get-all-instructors").get(requireAuth,GetAllInstructors);
 router.route("/admin/get-all-course-names").get(requireAuth,GetAllCourseNames);
