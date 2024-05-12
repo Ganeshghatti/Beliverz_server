@@ -437,7 +437,7 @@ exports.GetCourseContent = async (req, res, next) => {
   }
 };
 
-exports.GetTestseriesContent = async (req, res, next) => {
+exports.GetTestseriesContent = async (req, res) => {
   const { testseriesId, email } = req.params;
 
   try {
@@ -471,11 +471,13 @@ exports.GetTestseriesContent = async (req, res, next) => {
         );
         const currentTime = moment();
         const timeDifference = currentTime.diff(startTimer, "seconds");
-        const timeAvailable = testseries.maxTime*60 - timeDifference;
+        const timeAvailable = testseries.maxTime * 60 - timeDifference;
         console.log(timeAvailable);
 
-        if (timeDifference > testseries.maxTime*60) {
-          return res.status(302).json({ error: "Time expired", redirectToResults: true });
+        if (timeDifference > testseries.maxTime * 60) {
+          return res
+            .status(302)
+            .json({ error: "Time expired", redirectToResults: true });
         } else {
           return res.status(200).json({
             testseries,
@@ -488,7 +490,7 @@ exports.GetTestseriesContent = async (req, res, next) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-exports.SubmitTest = async (req, res, next) => {
+exports.SubmitTest = async (req, res) => {
   const { testseriesId, email } = req.params;
   const { selectedOptions } = req.body;
 
@@ -515,20 +517,15 @@ exports.SubmitTest = async (req, res, next) => {
         .json({ error: "User is not enrolled in this testseries." });
     }
 
-    let result = 0;
+    var result = 0;
 
-    for (let index = 0; index < selectedOptions.length; index++) {
-      for (let j = 0; j < testseries.questions.length; j++) {
-        if (testseries.questions[index].options[j].isCorrect) {
-          var correctOption = j;
-        }
-      }
-      const selectedOption = selectedOptions[index+1];
-      if (correctOption === selectedOption) {
-        result++;
-      }
-    }
-
+    selectedOptions.forEach((selectedOption, i) => {
+      const question = testseries.questions[i];
+      const correctOption = question.options.findIndex(
+        ({ isCorrect }) => isCorrect
+      );
+      if (selectedOption == correctOption) result++;
+    });
     user.testseriesEnrolled.forEach((enrolledtestseries) => {
       if (enrolledtestseries.testseriesId === testseriesId) {
         enrolledtestseries.result = result;
@@ -540,9 +537,11 @@ exports.SubmitTest = async (req, res, next) => {
 
     return res.status(200).json({ result });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.CheckResult = async (req, res, next) => {
   const { testseriesId, email } = req.params;
 
@@ -586,24 +585,47 @@ exports.MyAccount = async (req, res, next) => {
   const { email } = req.params;
 
   try {
-    const databaseuser = await userModel.findOne({ email });
+    var user = await userModel.findOne({ email });
 
-    if (!databaseuser) {
+    if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    const user = [];
-    for (const item of databaseuser.coursesEnrolled) {
-      const course = await courseModel.findOne({ courseId: item.courseId });
 
-      if (course) {
-        user[index] = {
-          courseName: course.courseName,
-          thumbnail: course.thumbnail,
+    const courses = await courseModel.find({
+      courseId: { $in: user.coursesEnrolled.map(({ courseId }) => courseId) },
+    });
+
+    // for (let i = 0; user.coursesEnrolled.length; i++) {
+    //   for (let j = 0; courses.length; j++) {
+    //     if (user.coursesEnrolled[i].courseId == courses[i].courseId) {
+    //       user.coursesEnrolled.courseName = courses[i].courseName;
+    //       user.coursesEnrolled.thumbnail = courses[i].thumbnail;
+    //     }
+    //   }
+    // }
+    const coursesEnrolled = user.coursesEnrolled;
+    console.log(coursesEnrolled)
+    user = {
+      ...user,
+      coursesEnrolled: coursesEnrolled.map((course) => {
+        let matchcourse =courses.find(
+          (DBcourse) => DBcourse.courseId == course.courseId
+        );
+        return {
+          ...course,
+          courseName: matchcourse.courseName,
+          thumbnail: matchcourse.thumbnail,
         };
-      }
-    }
+      }),
+    };
+    console.log(user);
+    // const Enrichedcourses = courses.map(({ courseName, thumbnail }) => ({
+    //   courseName,
+    //   thumbnail,
+    // }));
     res.status(200).json({ user });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
