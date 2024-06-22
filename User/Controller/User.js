@@ -195,27 +195,76 @@ exports.postForm = async (req, res, next) => {
 
 exports.GetCoursebyId = async (req, res, next) => {
   const { courseId } = req.params;
+  const { authorization } = req.headers;
 
   try {
-    const course = await courseModel.findOne({ courseId });
-    if (!course) {
-      return res.status(404).json({ error: `Course not found` });
+    let isEnrolled = false;
+    let course;
+    let enrolledCourse = null;
+
+    if (authorization) {
+      const token = authorization.split(" ")[1];
+      const { userId } = jwt.verify(token, process.env.JWTSECRET);
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      enrolledCourse = user.coursesEnrolled.find(
+        (course) => course.courseId === courseId
+      );
+
+      if (enrolledCourse) {
+        isEnrolled = true;
+      }
     }
-    res.status(200).json({ course: course });
+
+    course = await courseModel.findOne({ courseId });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    return res.status(200).json({ course, isEnrolled, enrolledCourse });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.GetTestseriesById = async (req, res, next) => {
   const { testseriesId } = req.params;
+  const { authorization } = req.headers;
 
   try {
-    const testseries = await testseriesModel.findOne({ testseriesId });
-    if (!testseries) {
-      return res.status(404).json({ error: `testseries not found` });
+    let isEnrolled = false;
+    let testseries;
+    let enrolledTestseries = null;
+
+    if (authorization) {
+      const token = authorization.split(" ")[1];
+      const { userId } = jwt.verify(token, process.env.JWTSECRET);
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      enrolledTestseries = user.testseriesEnrolled.find(
+        (testseries) => testseries.testseriesId === testseriesId
+      );
+
+      if (enrolledTestseries) {
+        isEnrolled = true;
+      }
     }
-    res.status(200).json({ testseries: testseries });
+
+    testseries = await testseriesModel.findOne({ testseriesId });
+    if (!testseries) {
+      return res.status(404).json({ error: "testseries not found" });
+    }
+
+    return res.status(200).json({ testseries, isEnrolled, enrolledTestseries });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -581,49 +630,78 @@ exports.CheckResult = async (req, res, next) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 exports.MyAccount = async (req, res, next) => {
   const { email } = req.params;
 
   try {
-    var user = await userModel.findOne({ email });
-
+    const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const courses = await courseModel.find({
-      courseId: { $in: user.coursesEnrolled.map(({ courseId }) => courseId) },
-    });
-
-    // for (let i = 0; user.coursesEnrolled.length; i++) {
-    //   for (let j = 0; courses.length; j++) {
-    //     if (user.coursesEnrolled[i].courseId == courses[i].courseId) {
-    //       user.coursesEnrolled.courseName = courses[i].courseName;
-    //       user.coursesEnrolled.thumbnail = courses[i].thumbnail;
-    //     }
-    //   }
-    // }
-    const coursesEnrolled = user.coursesEnrolled;
-    console.log(coursesEnrolled)
-    user = {
-      ...user,
-      coursesEnrolled: coursesEnrolled.map((course) => {
-        let matchcourse =courses.find(
-          (DBcourse) => DBcourse.courseId == course.courseId
-        );
-        return {
-          ...course,
-          courseName: matchcourse.courseName,
-          thumbnail: matchcourse.thumbnail,
-        };
-      }),
+    let coursesEnrolled = [];
+    let testseriesEnrolled = [];
+    if (user.coursesEnrolled && user.coursesEnrolled.length > 0) {
+      for (let i = 0; i < user.coursesEnrolled.length; i++) {
+        const enrolledCourse = user.coursesEnrolled[i];
+        if (enrolledCourse && enrolledCourse.courseId) {
+          try {
+            const course = await courseModel.findOne({
+              courseId: enrolledCourse.courseId,
+            });
+            if (course) {
+              let courseDetails = {
+                courseName: course.courseName,
+                thumbnail: course.thumbnail,
+                courseId: course.courseId,
+                currentlywatching: enrolledCourse.currentlywatching,
+              };
+              coursesEnrolled.push(courseDetails);
+            } else {
+              console.error(`Course not found: ${enrolledCourse.courseId}`);
+            }
+          } catch (error) {
+            console.error(
+              `Error finding course: ${enrolledCourse.courseId}`,
+              error
+            );
+          }
+        }
+      }
+    }
+    if (user.testseriesEnrolled && user.testseriesEnrolled.length > 0) {
+      for (let i = 0; i < user.testseriesEnrolled.length; i++) {
+        const enrolledTestseries= user.testseriesEnrolled[i];
+        if (enrolledTestseries && enrolledTestseries.testseriesId) {
+          try {
+            const testseries = await testseriesModel.findOne({
+              testseriesId: enrolledTestseries.testseriesId,
+            });
+            if (testseries) {
+              let testseriesDetails = {
+                testseriesName: testseries.testseriesName,
+                thumbnail: testseries.thumbnail,
+                testseriesId: testseries.testseriesId,
+              };
+              testseriesEnrolled.push(testseriesDetails);
+            }
+          } catch (error) {
+            console.error(
+              `Error finding course: ${enrolledTestseries.testseriesId}`,
+              error
+            );
+          }
+        }
+      }
+    }
+    let userDetails = {
+      email: user.email,
+      username: user.username,
+      coursesEnrolled: coursesEnrolled,
+      testseriesEnrolled:testseriesEnrolled
     };
-    console.log(user);
-    // const Enrichedcourses = courses.map(({ courseName, thumbnail }) => ({
-    //   courseName,
-    //   thumbnail,
-    // }));
-    res.status(200).json({ user });
+    res.status(200).json({ userDetails });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
