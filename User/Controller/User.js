@@ -23,6 +23,14 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+exports.Test = async (req, res, next) => {
+  try {
+    res.status(200).send({ success: true });
+  } catch {
+    res.status(500).send({ error: "Failed" });
+  }
+};
+
 exports.register = async (req, res, next) => {
   const userdata = req.body;
 
@@ -672,7 +680,7 @@ exports.MyAccount = async (req, res, next) => {
     }
     if (user.testseriesEnrolled && user.testseriesEnrolled.length > 0) {
       for (let i = 0; i < user.testseriesEnrolled.length; i++) {
-        const enrolledTestseries= user.testseriesEnrolled[i];
+        const enrolledTestseries = user.testseriesEnrolled[i];
         if (enrolledTestseries && enrolledTestseries.testseriesId) {
           try {
             const testseries = await testseriesModel.findOne({
@@ -699,7 +707,7 @@ exports.MyAccount = async (req, res, next) => {
       email: user.email,
       username: user.username,
       coursesEnrolled: coursesEnrolled,
-      testseriesEnrolled:testseriesEnrolled
+      testseriesEnrolled: testseriesEnrolled,
     };
     res.status(200).json({ userDetails });
   } catch (error) {

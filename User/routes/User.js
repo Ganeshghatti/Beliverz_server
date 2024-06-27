@@ -22,6 +22,7 @@ const {
   GetTestseriesContent,
   SubmitTest,
   CheckResult,
+  Test,
 } = require("../Controller/User");
 const requireAuth = require("../middleware/User");
 
@@ -75,5 +76,7 @@ router
   .post(requireAuth, SubmitFeedback);
 router.route("/user/forgot-password").post(ForgotPassword);
 router.route("/user/reset-password/:resetPasswordToken").post(ResetPassword);
+
+router.route("/test").get(Test);
 
 module.exports = router;
