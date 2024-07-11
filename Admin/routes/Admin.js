@@ -14,6 +14,7 @@ const {
   GetAllUsers,
   GetAllTestSeries,
   CreateTestSeries,
+  GetAllTestseriesNames,
 } = require("../Controller/Admin");
 const requireAuth = require("../middleware/Admin");
 const { CreateCourse, GetAllCourse } = require("../Controller/Admin");
@@ -27,6 +28,7 @@ router.route("/admin/get-all-testseries").get(requireAuth,GetAllTestSeries);
 router.route("/admin/create-instructor").post(requireAuth,CreateInstructor);
 router.route("/admin/get-all-instructors").get(requireAuth,GetAllInstructors);
 router.route("/admin/get-all-course-names").get(requireAuth,GetAllCourseNames);
+router.route("/admin/get-all-testseries-names").get(requireAuth,GetAllTestseriesNames);
 router.route("/admin/get-all-category").get(requireAuth,GetAllCategory);
 router.route("/admin/edit-category").put(requireAuth,EditCategory);
 router.route("/admin/edit-instructor/:instructorId").patch(requireAuth,EditInstructor);

@@ -182,7 +182,7 @@ exports.GetAllTestSeries = async (req, res, next) => {
   }
 };
 exports.CreateInstructor = async (req, res, next) => {
-  const { name, email, password, courses } = req.body;
+  const { name, email, password, courses, testseries } = req.body;
   try {
     const prefix = "INST";
     const uniquePart = uuid.v4().replace(/-/g, "").substr(0, 6);
@@ -197,6 +197,7 @@ exports.CreateInstructor = async (req, res, next) => {
       password: hash,
       email,
       coursesAllowed: courses,
+      testseriesAllowed:testseries,
       createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
       createdBy: req.admin.email,
       isInstructor: true,
@@ -259,7 +260,23 @@ exports.GetAllCourseNames = async (req, res, next) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
+exports.GetAllTestseriesNames = async (req, res, next) => {
+  try {
+    const alltestseries = await testseriesModel.find();
 
+    const simplifiedTestseries = alltestseries.map((testseries) => ({
+      testseriesName: testseries.testseriesName,
+      testseriesId: testseries.testseriesId,
+    }));
+
+    res.status(200).json({ testseries: simplifiedTestseries });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
 exports.GetAllCategory = async (req, res, next) => {
   try {
     const allCategory = await categoryModel.find();
@@ -303,10 +320,9 @@ exports.EditCategory = async (req, res, next) => {
 
 exports.EditInstructor = async (req, res, next) => {
   const { instructorId } = req.params;
-  console.log(instructorId, req.body);
+  console.log(req.body.courses,req.body.testseries);
   try {
     const instructor = await instructorModel.findOne({ instructorId });
-    console.log(instructor);
 
     if (!instructor) {
       return res
@@ -314,9 +330,15 @@ exports.EditInstructor = async (req, res, next) => {
         .json({ error: `Instructor with ID ${instructorId} not found` });
     }
     instructor.coursesAllowed = req.body.courses;
+    instructor.testseriesAllowed = req.body.testseries;
+    instructor.testseriesAllowedTest = req.body.testseries;
+
     instructor.lastUpdate = moment().format("MMMM Do YYYY, h:mm:ss a");
     await instructor.save();
-
+    const instructorafterupdate = await instructorModel.findOne({
+      instructorId,
+    });
+    console.log(instructorafterupdate);
     res.status(200).json({ msg: `Instructor updated successfully` });
   } catch (error) {
     console.error(error);
@@ -423,10 +445,10 @@ exports.CreateTestSeries = async (req, res, next) => {
       testseriesName,
       testseriesId,
       payment,
-      maxTime:maxTime,
-      TestSeriesDescription:testseriesDescription,
+      maxTime: maxTime,
+      TestSeriesDescription: testseriesDescription,
       thumbnail: "",
-      totalEnrollments:0,
+      totalEnrollments: 0,
       instructors,
       testInstructions,
       createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
@@ -454,9 +476,10 @@ exports.CreateTestSeries = async (req, res, next) => {
       }
     }
 
-    res
-      .status(201)
-      .json({ message: "Test Series created successfully", testseries: newTestSeries });
+    res.status(201).json({
+      message: "Test Series created successfully",
+      testseries: newTestSeries,
+    });
   } catch (error) {
     console.error(error);
     res

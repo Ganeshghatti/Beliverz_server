@@ -1,5 +1,6 @@
 const instructorModel = require("../../Model/Instructor");
 const courseModel = require("../../Model/Course");
+const testseriesModel = require("../../Model/TestSeries");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -90,7 +91,34 @@ exports.getAccessibleCourseNames = async (req, res, next) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
+exports.getAccessibleTestseriesNames = async (req, res, next) => {
+  try {
+    const accessibleTestseries = [];
+    for (let i = 0; i < res.locals.instructor.testseriesAllowed.length; i++) {
+      const testseriesId = res.locals.instructor.testseriesAllowed[i].testseriesId;
 
+      const oneTestseries = await testseriesModel.findOne({ testseriesId });
+
+      if (oneTestseries) {
+        accessibleTestseries.push({
+          testseriesId: oneTestseries.testseriesId,
+          testseriesName: oneTestseries.testseriesName,
+          testseriesrating: oneTestseries.rating,
+          thumbnail: oneTestseries.thumbnail,
+          testseriesCategory: oneTestseries.testseriesCategory,
+          payment: oneTestseries.payment,
+        });
+      }
+    }
+
+    res.status(200).json({ testseries: accessibleTestseries });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+};
 exports.getInstructor = async (req, res, next) => {
   try {
     console.log(res.locals.instructor);

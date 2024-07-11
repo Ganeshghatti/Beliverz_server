@@ -34,10 +34,10 @@ const instructorSchema = new mongoose.Schema({
   ],
   testseriesAllowed: [
     {
-      TestId: {
+      testseriesId: {
         type: String,
       },
-      TestName: {
+      testseriesName: {
         type: String,
       },
     },
