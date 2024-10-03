@@ -197,7 +197,7 @@ exports.CreateInstructor = async (req, res, next) => {
       password: hash,
       email,
       coursesAllowed: courses,
-      testseriesAllowed:testseries,
+      testseriesAllowed: testseries,
       createdAt: moment().format("MMMM Do YYYY, h:mm:ss a"),
       createdBy: req.admin.email,
       isInstructor: true,
@@ -320,7 +320,7 @@ exports.EditCategory = async (req, res, next) => {
 
 exports.EditInstructor = async (req, res, next) => {
   const { instructorId } = req.params;
-  console.log(req.body.courses,req.body.testseries);
+  console.log(req.body.courses, req.body.testseries);
   try {
     const instructor = await instructorModel.findOne({ instructorId });
 
@@ -505,23 +505,20 @@ exports.CreateTestSeries = async (req, res, next) => {
 //   }
 // };
 
-// exports.AdminLogin = async (req, res, next) => {
-//   const { email, password } = req.body;
-//   try {
-//     const salt = await bcrypt.genSalt(10);
-//     const hash = await bcrypt.hash(password, salt);
+// const createAdmin = async () => {
+//   const email = "admin@beliverz.com";
+//   const password = "admin";
+// const salt = await bcrypt.genSalt(10);
+// const hash = await bcrypt.hash(password, salt);
 
-//     const admin = new adminModel({
-//       email: email,
-//       password: hash,
-//     });
+//   const admin = new adminModel({
+//     email: email,
+//     password: hash,
+//     isAdmin: true,
+//   });
 
-//     const newadmin = await admin.save();
-//     console.log("object");
-//     res.status(200).json({
-//       email: newadmin.email,
-//     });
-//   } catch (error) {
-//     res.status(500).send({ error: "Failed to register user" });
-//   }
+//   const newadmin = await admin.save();
+//   console.log(newadmin);
 // };
+
+// createAdmin();
